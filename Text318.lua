@@ -1,26 +1,24 @@
 local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
-local LocalPlayer = Players.LocalPlayer
+-- 🔥 Configuración editable
+_G.FAKE_JUMP_POWER = _G.FAKE_JUMP_POWER or 60
+local MAX_DISTANCE = 15
 
--- 🔥 Variable global editable
-_G.FAKE_JUMP_POWER = _G.FAKE_JUMP_POWER or 70
-local MAX_DISTANCE = 10
-
--- ======================
--- TOGGLE SOLO GUI
--- ======================
-
+-- =========================
+-- TOGGLE REAL
+-- =========================
 if _G.BombJumpGUI then
 	_G.BombJumpGUI:Destroy()
 	_G.BombJumpGUI = nil
 	return
 end
 
--- ======================
+-- =========================
 -- GUI
--- ======================
+-- =========================
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BombJumpGUI"
@@ -32,15 +30,15 @@ _G.BombJumpGUI = ScreenGui
 local Button = Instance.new("TextButton")
 Button.Size = UDim2.new(0,170,0,55)
 Button.Position = UDim2.new(0.5,-85,0.8,0)
+Button.Text = "BOMB BOOST"
 Button.BackgroundColor3 = Color3.fromRGB(255,80,80)
 Button.TextColor3 = Color3.new(1,1,1)
 Button.TextScaled = true
-Button.Text = "BOMB BOOST"
 Button.Parent = ScreenGui
 
--- ======================
--- DRAG
--- ======================
+-- =========================
+-- DRAG FIX (ANTI 2 DEDOS)
+-- =========================
 
 local dragging = false
 local dragInput, dragStart, startPos
@@ -75,9 +73,9 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
--- ======================
+-- =========================
 -- FUNCIONES
--- ======================
+-- =========================
 
 local waitingForHandle = false
 
@@ -101,20 +99,20 @@ local function equipAndDropBomb()
 	local hrp = character:FindFirstChild("HumanoidRootPart")
 	if not humanoid or not hrp then return end
 	
-	local tool = character:FindFirstChild("FakeBomb")
+	local tool = character:FindFirstChild("FakeBomb") 
 		or LocalPlayer.Backpack:FindFirstChild("FakeBomb")
 	if not tool then return end
 	
 	humanoid:EquipTool(tool)
-	task.wait(0.1)
 	
 	local remote = tool:FindFirstChild("Remote")
 	if not remote then return end
 	
 	waitingForHandle = true
-	remote:FireServer(CFrame.new(hrp.Position - Vector3.new(0,2,0)), 50)
+	remote:FireServer(CFrame.new(hrp.Position - Vector3.new(0,1,0)), 50)
 end
 
+-- Detectar Handle y hacer segundo salto
 Workspace.ChildAdded:Connect(function(obj)
 	if waitingForHandle and obj.Name == "Handle" and obj:IsA("Part") then
 		
@@ -124,20 +122,58 @@ Workspace.ChildAdded:Connect(function(obj)
 		local hrp = character:FindFirstChild("HumanoidRootPart")
 		if not hrp then return end
 		
-		task.wait(0.1)
+		task.wait()
 		
 		if (obj.Position - hrp.Position).Magnitude <= MAX_DISTANCE then
 			obj.CFrame = hrp.CFrame * CFrame.new(0,-2,0)
 			waitingForHandle = false
 			
-			task.wait(0.1)
+			task.wait()
 			simulateJump()
 		end
 	end
 end)
 
+-- =========================
+-- BOTÓN INTELIGENTE SIN DELAY
+-- =========================
+
 Button.MouseButton1Click:Connect(function()
-	simulateJump()
-	task.wait(0.15)
+
+	local character = LocalPlayer.Character
+	if not character then return end
+	
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+	
+	local state = humanoid:GetState()
+	local isOnGround = (
+		state == Enum.HumanoidStateType.Running or
+		state == Enum.HumanoidStateType.Landed
+	)
+
+	Button.MouseButton1Click:Connect(function()
+
+	local character = LocalPlayer.Character
+	if not character then return end
+	
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+	
+	local state = humanoid:GetState()
+	local isOnGround = (
+		state == Enum.HumanoidStateType.Running or
+		state == Enum.HumanoidStateType.Landed
+	)
+
+	if isOnGround then
+		-- primero salto
+		simulateJump()
+
+		-- cooldown solo en piso
+		task.wait(0.25)
+	end
+	
+	-- en aire sale instantáneo
 	equipAndDropBomb()
 end)
