@@ -152,8 +152,6 @@ Button.MouseButton1Click:Connect(function()
 		state == Enum.HumanoidStateType.Landed
 	)
 
-	Button.MouseButton1Click:Connect(function()
-
 	local character = LocalPlayer.Character
 	if not character then return end
 	
