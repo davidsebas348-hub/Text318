@@ -175,3 +175,5 @@ Button.MouseButton1Click:Connect(function()
 	-- en aire sale instantáneo
 	equipAndDropBomb()
 end)
+
+end)
